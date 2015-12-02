@@ -1,7 +1,17 @@
 import networkx as nx
 import numpy as numpy
+import time as time
 
 GRAPH_FILENAME = "facebook_data/facebook_combined.txt"
+
+def timing(f):
+  def wrap(*args):
+      time1 = time.time()
+      ret = f(*args)
+      time2 = time.time()
+      print '%s function took %0.3f ms' % (f.func_name, (time2-time1)*1000.0)
+      return ret
+  return wrap
 
 def create_dummy():
   edgelist = [
@@ -74,18 +84,68 @@ def floyd_warshall(graph):
 
   return dist
 
+def calculate_max_ecc(graph, nodes):
+  max_ecc = 0
+  for node in nodes:
+    ecc = nx.eccentricity(graph, node)
+    if ecc > max_ecc:
+      max_ecc = ecc
+  return max_ecc
+
+# from http://www.sciencedirect.com/science/article/pii/S0304397512008687
+@timing
+def ifub(graph, u, l=0, k=0):
+  fringes = get_fringe_list(graph, u)
+
+  i = len(fringes) - 1
+  lb = max(i, l)
+  ub = 2 * i
+
+  while ub - lb > k:
+    b = calculate_max_ecc(graph, fringes[i])
+    if max(lb, b) > 2 * (i - 1):
+      return max(lb, b)
+    else:
+      lb = max(lb, b)
+      ub = 2 * (i - 1)
+    i -= 1
+
+  return lb
+
+# same as calling nx.diamter directly with a timer
+@timing
+def normal_diameter(graph):
+  return nx.diameter(graph)
+
 # given apsp, gimme diameter
 def diameter_from_apsp(dist):
   return numpy.max(dist)
 
-def main():
-  # graph = fetch_fb_graph()
-  graph = create_dummy()
-  print "calculating diameter"
+def test_big_graph():
+  graph = fetch_fb_graph()
+  print "ifub"
+  print ifub(graph, 0)
+  print "normal library"
+  print nx.diameter(graph)
 
+def test_small_graph():
+  graph = create_dummy()
   dist = floyd_warshall(graph)
   print diameter_from_apsp(dist)
-  import pdb; pdb.set_trace()
-  print nx.diameter(graph)
+
+def test_timer():
+  graph = fetch_fb_graph()
+
+  # around 6.247 seconds
+  print "ifub"
+  print ifub(graph, 0)
+
+  # around 132.322 seconds
+  print "normal library"
+  print normal_diameter(graph) 
+
+def main():
+  print "calculating diameter"
+  test_timer()
 
 main()
