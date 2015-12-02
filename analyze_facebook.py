@@ -16,6 +16,28 @@ def create_dummy():
 
   return nx.from_edgelist(edgelist)
 
+# based off of networkx single_source_shortest_path_length implementation
+def get_fringe_list(graph, source, cutoff=None):
+  seen = {}                  # level (number of hops) when seen in BFS
+  level = 0                  # the current level
+  nextlevel = {source:1}  # dict of nodes to check at next level
+  fringes = []
+  while nextlevel:
+      thislevel = nextlevel  # advance to next level
+      nextlevel = {}         # and start a new list (fringe)
+      for v in thislevel:
+          if v not in seen:
+              seen[v] = level # set the level of vertex v
+              nextlevel.update(graph[v]) # add neighbors of v
+              if len(fringes) == level:
+                fringes.append([v])
+              else:
+                fringes[level].append(v)
+      if (cutoff is not None and cutoff <= level):  break
+      level=level+1
+  del seen
+  return fringes
+
 def fetch_fb_graph():
   print "fetching graph"
   edgelist = []
