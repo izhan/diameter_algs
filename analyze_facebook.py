@@ -1,17 +1,7 @@
 import networkx as nx
-import numpy as numpy
-import time as time
+import network_algos as algs
 
 GRAPH_FILENAME = "facebook_data/facebook_combined.txt"
-
-def timing(f):
-  def wrap(*args):
-      time1 = time.time()
-      ret = f(*args)
-      time2 = time.time()
-      print '%s function took %0.3f ms' % (f.func_name, (time2-time1)*1000.0)
-      return ret
-  return wrap
 
 def create_dummy():
   edgelist = [
@@ -25,28 +15,6 @@ def create_dummy():
   ]
 
   return nx.from_edgelist(edgelist)
-
-# based off of networkx single_source_shortest_path_length implementation
-def get_fringe_list(graph, source, cutoff=None):
-  seen = {}                  # level (number of hops) when seen in BFS
-  level = 0                  # the current level
-  nextlevel = {source:1}  # dict of nodes to check at next level
-  fringes = []
-  while nextlevel:
-      thislevel = nextlevel  # advance to next level
-      nextlevel = {}         # and start a new list (fringe)
-      for v in thislevel:
-          if v not in seen:
-              seen[v] = level # set the level of vertex v
-              nextlevel.update(graph[v]) # add neighbors of v
-              if len(fringes) == level:
-                fringes.append([v])
-              else:
-                fringes[level].append(v)
-      if (cutoff is not None and cutoff <= level):  break
-      level=level+1
-  del seen
-  return fringes
 
 def fetch_fb_graph():
   print "fetching graph"
@@ -62,61 +30,6 @@ def fetch_fb_graph():
   print "finished fetching graph"
   return nx.from_edgelist(edgelist)
 
-# generate apsp 2d array
-def floyd_warshall(graph):
-  n = graph.order()
-  
-  # init n x n array of min dist w/ inf distance
-  dist = numpy.empty((n,n,))
-  dist[:] = float("inf")
-
-  # dist to self is 0, dist to adj is 1
-  for i in range(0, n):
-    dist[i][i] = 0
-    for j in graph.adj[i].keys():
-      dist[i][j] = 1
-
-  for k in range(0, n):
-    for i in range(0, n):
-      for j in range(0, n):
-        if dist[i][j] > dist[i][k] + dist[k][j]:
-          dist[i][j] = dist[i][k] + dist[k][j] 
-
-  return dist
-
-def calculate_max_ecc(graph, nodes):
-  max_ecc = 0
-  for node in nodes:
-    ecc = nx.eccentricity(graph, node)
-    if ecc > max_ecc:
-      max_ecc = ecc
-  return max_ecc
-
-# from http://www.sciencedirect.com/science/article/pii/S0304397512008687
-@timing
-def ifub(graph, u, l=0, k=0):
-  fringes = get_fringe_list(graph, u)
-
-  i = len(fringes) - 1
-  lb = max(i, l)
-  ub = 2 * i
-
-  while ub - lb > k:
-    b = calculate_max_ecc(graph, fringes[i])
-    if max(lb, b) > 2 * (i - 1):
-      return max(lb, b)
-    else:
-      lb = max(lb, b)
-      ub = 2 * (i - 1)
-    i -= 1
-
-  return lb
-
-# same as calling nx.diamter directly with a timer
-@timing
-def normal_diameter(graph):
-  return nx.diameter(graph)
-
 # given apsp, gimme diameter
 def diameter_from_apsp(dist):
   return numpy.max(dist)
@@ -124,13 +37,13 @@ def diameter_from_apsp(dist):
 def test_big_graph():
   graph = fetch_fb_graph()
   print "ifub"
-  print ifub(graph, 0)
+  print algs.ifub(graph, 0)
   print "normal library"
   print nx.diameter(graph)
 
 def test_small_graph():
   graph = create_dummy()
-  dist = floyd_warshall(graph)
+  dist = algs.floyd_warshall(graph)
   print diameter_from_apsp(dist)
 
 def test_timer():
@@ -138,11 +51,11 @@ def test_timer():
 
   # around 6.247 seconds
   print "ifub"
-  print ifub(graph, 0)
+  print algs.ifub(graph, 0)
 
   # around 132.322 seconds
   print "normal library"
-  print normal_diameter(graph) 
+  print algs.normal_diameter(graph) 
 
 def main():
   print "calculating diameter"
