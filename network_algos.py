@@ -16,6 +16,8 @@ def timing(f):
   return wrap
 
 # based off of networkx single_source_shortest_path_length implementation
+# returns array of vertices: 
+# [vertices 0 dist away from source, vertices 1 dist away from source, ...]
 def get_fringe_list(graph, source, cutoff=None):
   seen = {}                  # level (number of hops) when seen in BFS
   level = 0                  # the current level
@@ -68,6 +70,10 @@ def calculate_max_ecc(graph, nodes):
   return max_ecc
 
 # from http://www.sciencedirect.com/science/article/pii/S0304397512008687
+# calculates fringe list from one BFS. gets height of tree
+# lower bound = height of tree
+# upper bound = twice height of tree
+# every iteration, calculate eccentricities of all leaves of tree
 @timing
 def ifub(graph, u, l=0, k=0):
   fringes = get_fringe_list(graph, u)
