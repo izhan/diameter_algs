@@ -4,11 +4,15 @@ import time as time
 
 def timing(f):
   def wrap(*args):
-      time1 = time.time()
-      ret = f(*args)
-      time2 = time.time()
-      print '%s function took %0.3f ms' % (f.func_name, (time2-time1)*1000.0)
-      return ret
+    print "---------------------"
+    print 'TIMING: %s' % (f.func_name)
+    time1 = time.time()
+    ret = f(*args)
+    time2 = time.time()
+    print '%s function took %0.3f ms' % (f.func_name, (time2-time1)*1000.0)
+    print 'return: %s' % (ret)
+    print "---------------------\n"
+    return ret
   return wrap
 
 # based off of networkx single_source_shortest_path_length implementation
