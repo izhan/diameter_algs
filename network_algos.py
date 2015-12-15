@@ -1,6 +1,7 @@
 import networkx as nx
 import numpy as numpy
 import time as time
+import operator
 
 def timing(f):
   def wrap(*args):
@@ -107,7 +108,7 @@ def ifub(graph, u, l=0, k=0):
 #                           OR twice the smallest lower bound of eccentricity over all nodes
 @timing
 def bounding_diameters(graph):
-  w_set = set(graph).copy()
+  w_set = dict(graph.degree())
   n = len(w_set)
 
   e_lower = numpy.empty((n,))
@@ -119,7 +120,7 @@ def bounding_diameters(graph):
   upper_bound = float("inf")
 
   while (lower_bound != upper_bound) and (len(w_set) != 0):
-    v = next(iter(w_set))
+    v = max(w_set.iteritems(), key=operator.itemgetter(1))[0]
     path_lengths = nx.single_source_dijkstra_path_length(graph, v)
     ecc = max(path_lengths.iteritems(), key=operator.itemgetter(1))[1] # plucking highest value in dict
 
@@ -130,7 +131,7 @@ def bounding_diameters(graph):
       e_lower[w] = max(e_lower[w], max(ecc - path_lengths[w], path_lengths[w]))
       e_upper[w] = min(e_upper[w], ecc + path_lengths[w])
       if (e_upper[w] <= lower_bound and e_lower[w] >= upper_bound / 2) or e_lower[w] == e_upper[w]:
-        temp.remove(w)
+        del temp[w]
     w_set = temp
 
   return lower_bound
