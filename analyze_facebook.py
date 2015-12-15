@@ -23,7 +23,8 @@ def graph_from_file(file):
   graph = fetch_graph(file)
 
   nodes = max(nx.connected_components(graph), key=len)
-  return graph.subgraph(nodes)
+  g = graph.subgraph(nodes)
+  return nx.convert_node_labels_to_integers(g)
 
 def fetch_graph(file):
   print "fetching graph"
@@ -59,10 +60,12 @@ def test_timer(file):
   print "Running for file: " + file
   graph = graph_from_file(file)
   arbitrary_vertex = next(iter(graph))
-
-  # around 6.247 seconds
+  
   print "ifub"
   print algs.ifub(graph, arbitrary_vertex)
+
+  print "bounding_diameters"
+  print algs.bounding_diameters(graph)
 
   # # around 132.322 seconds
   # print "normal library"
@@ -72,7 +75,16 @@ def main():
   print "calculating diameter"
   test_timer(FACEBOOK_FILENAME)
   test_timer(ENRON_FILENAME)
+  # annoying b/c nodes dont start from 0
   test_timer(ASTROPH_FILENAME)
   test_timer(GNUTELLA_FILENAME)
 
-main()
+import pdb, traceback, sys
+
+if __name__ == '__main__':
+    try:
+        main()
+    except:
+        type, value, tb = sys.exc_info()
+        traceback.print_exc()
+        pdb.post_mortem(tb)

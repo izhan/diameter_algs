@@ -69,6 +69,12 @@ def calculate_max_ecc(graph, nodes):
       max_ecc = ecc
   return max_ecc
 
+# same as calling nx.diamter directly with a timer
+@timing
+def normal_diameter(graph):
+  return nx.diameter(graph)
+
+
 # from http://www.sciencedirect.com/science/article/pii/S0304397512008687
 # calculates fringe list from one BFS. gets height of tree
 # lower bound = height of tree
@@ -93,8 +99,39 @@ def ifub(graph, u, l=0, k=0):
 
   return lb
 
-# same as calling nx.diamter directly with a timer
+# https://dl.acm.org/citation.cfm?id=2063748
+# observation 1: given e(v), k = dist(v, w), e(v)-k <= e(w) <= e(v)+k
+# observation 2: 
+#   lower bound of diameter: maximum lower bound of eccentricity over all nodes
+#   upper bound of diamter: maximum upper bound of eccentricity over all nodes 
+#                           OR twice the smallest lower bound of eccentricity over all nodes
 @timing
-def normal_diameter(graph):
-  return nx.diameter(graph)
+def bounding_diameters(graph):
+  w_set = set(graph).copy()
+  n = len(w_set)
+
+  e_lower = numpy.empty((n,))
+  e_upper = numpy.empty((n,))
+  e_lower[:] = -float("inf")
+  e_upper[:] = float("inf")
+
+  lower_bound = -float("inf")
+  upper_bound = float("inf")
+
+  while (lower_bound != upper_bound) and (len(w_set) != 0):
+    v = next(iter(w_set))
+    path_lengths = nx.single_source_dijkstra_path_length(graph, v)
+    ecc = max(path_lengths.iteritems(), key=operator.itemgetter(1))[1] # plucking highest value in dict
+
+    lower_bound = max(lower_bound, ecc)
+    upper_bound = min(upper_bound, 2 * ecc)
+    temp = w_set.copy()
+    for w in w_set:
+      e_lower[w] = max(e_lower[w], max(ecc - path_lengths[w], path_lengths[w]))
+      e_upper[w] = min(e_upper[w], ecc + path_lengths[w])
+      if (e_upper[w] <= lower_bound and e_lower[w] >= upper_bound / 2) or e_lower[w] == e_upper[w]:
+        temp.remove(w)
+    w_set = temp
+
+  return lower_bound
 
